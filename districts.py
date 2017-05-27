@@ -1,24 +1,28 @@
 #!/usr/bin/python3
 
-import datetime
 import argparse
 import json
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 
+def BuildPolygon( coords_list ):
+    c = []
+    for coords in coords_list:
+        c += coords
+    return Polygon( c )
+
+
 def FindDistrict( districts, lon, lat, default ):
     point = Point( lon, lat )
     for district in districts:
-        for coords in districts[district]:
-            polygon = Polygon( coords )
+        for polygon in districts[district]:
             if polygon.contains( point ):
                 return district
     return default
 
 
 if __name__ == '__main__':
-    start_time = datetime.datetime.now()
     parser = argparse.ArgumentParser(description='A script to add districts to a Freifunk nodes.json. Needs a GeoJSON file to get the data from.')
     parser.add_argument('--default-district', help="Used if a node isn't in any other district.")
     parser.add_argument('-o', '--output', help='Output file. Default is stdout.')
@@ -31,12 +35,12 @@ if __name__ == '__main__':
         data = json.load(f)
         for district in data['features']:
             name = district['properties']['STADTTLNAM']
+            districts[name] = []
             if district['geometry']['type'] == 'MultiPolygon':
-                districts[name] = []
                 for subpoly in district['geometry']['coordinates']:
-                    districts[name] += subpoly
+                    districts[name].append( BuildPolygon( subpoly ) )
             else:
-                districts[name] = district['geometry']['coordinates']
+                districts[name] = [ BuildPolygon( district['geometry']['coordinates'] ) ]
 
     nodes_json = None
     with open(args.nodesJSON, 'r') as f:
@@ -58,5 +62,3 @@ if __name__ == '__main__':
             json.dump( nodes_json, f )
     else:
         print( json.dumps( nodes_json ) )
-
-    #print( datetime.datetime.now() - start_time )
