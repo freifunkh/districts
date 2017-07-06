@@ -93,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--default-district', help="Used if a node isn't in any other district. Defaults to 'Default'.", default='Default')
     parser.add_argument('-n', '--output-nodes-json', help='Output nodes.json file')
     parser.add_argument('-m', '--output-migrate-folder', help='Output folder for router files.')
+    parser.add_argument('-x', '--output-outsiders-json', help='Output outsiders.json file, showing only nodes who are in no given district.')
     parser.add_argument('nodesJSON', help='Path to the nodes.json file.')
     parser.add_argument('geoJSON', help='Path to the GeoJSON file containing information about the districts.')
     args = parser.parse_args()
@@ -113,27 +114,26 @@ if __name__ == '__main__':
     with open(args.nodesJSON, 'r') as f:
         nodes_json = json.load(f)
 
-#    not_hannover = json.loads('{"type": "FeatureCollection","features": []}')
+    outsiders = json.loads('{"type": "FeatureCollection","features": []}')
 
     for node_id in nodes_json['nodes']:
         if not 'location' in nodes_json['nodes'][node_id]['nodeinfo']:
             nodes_json['nodes'][node_id]['nodeinfo']['location'] = {}
-        lat = lon = 0
+
+        district = args.default_district
         try:
             lat = nodes_json['nodes'][node_id]['nodeinfo']['location']['latitude']
             lon = nodes_json['nodes'][node_id]['nodeinfo']['location']['longitude']
+            district = find_district( districts, lon, lat, args.default_district )
+
+            if args.output_outsiders_json and district == args.default_district:
+                outsider = json.loads('{"type": "Feature","properties": {},"geometry": {"type": "Point", "coordinates": []}}')
+                outsider['properties']['name'] = node_id
+                outsider['geometry']['coordinates'].append(lon)
+                outsider['geometry']['coordinates'].append(lat)
+                outsiders['features'].append(outsider)
         except KeyError:
             pass
-
-        district = find_district( districts, lon, lat, args.default_district )
-
-#        if district == args.default_district:
-#            if lat != 0 and lon != 0:
-#                alien = json.loads('{"type": "Feature","properties": {},"geometry": {"type": "Point", "coordinates": []}}')
-#                alien['properties']['name'] = node_id
-#                alien['geometry']['coordinates'].append(lon)
-#                alien['geometry']['coordinates'].append(lat)
-#                not_hannover['features'].append( alien )
 
         nodes_json['nodes'][node_id]['nodeinfo']['location']['district'] = district
         if args.output_migrate_folder:
@@ -143,6 +143,8 @@ if __name__ == '__main__':
 
     if args.output_nodes_json:
         with open(args.output_nodes_json, 'w') as f:
-            json.dump( nodes_json, f )
+            json.dump(nodes_json, f)
 
-#    print( json.dumps(not_hannover) )
+    if args.output_outsiders_json:
+        with open(args.output_outsiders_json, 'w') as f:
+            json.dump(outsiders, f)
