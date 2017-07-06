@@ -88,12 +88,24 @@ def find_district(districts, lon, lat, default):
     return default
 
 
+def sanitize_district(district):
+    district = district.lower()
+    district = district.replace(' ', '')
+    district = district.replace('-', '')
+    district = district.replace('ä', 'ae')
+    district = district.replace('ö', 'oe')
+    district = district.replace('ü', 'ue')
+    district = district.replace('ß', 'ss')
+    return district
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A script to add districts to a Freifunk nodes.json. Needs a GeoJSON file to get the data from.')
     parser.add_argument('--default-district', help="Used if a node isn't in any other district. Defaults to 'Default'.", default='Default')
     parser.add_argument('-n', '--output-nodes-json', help='Output nodes.json file')
     parser.add_argument('-m', '--output-migrate-folder', help='Output folder for router files.')
     parser.add_argument('-x', '--output-outsiders-json', help='Output outsiders.json file, showing only nodes who are in no given district.')
+    parser.add_argument('-s', '--sanitize-districts', help='Remove some special characters from district names and convert them to lower case.', action="store_true")
     parser.add_argument('nodesJSON', help='Path to the nodes.json file.')
     parser.add_argument('geoJSON', help='Path to the GeoJSON file containing information about the districts.')
     args = parser.parse_args()
@@ -134,6 +146,9 @@ if __name__ == '__main__':
                 outsiders['features'].append(outsider)
         except KeyError:
             pass
+
+        if args.sanitize_districts:
+            district = sanitize_district(district)
 
         nodes_json['nodes'][node_id]['nodeinfo']['location']['district'] = district
         if args.output_migrate_folder:
