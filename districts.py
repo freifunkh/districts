@@ -16,7 +16,7 @@ def sort_values( v0, v1 ):
 
 
 def close_enough( a, b ):
-    border = a/100
+    border = 0.000000001
     return ( max(a, b) - min(a, b) < border )
 
 
@@ -73,9 +73,7 @@ def is_point_in_polygon( px, py, polygon ):
     for i in range(line_count-1):
         j = i+1
         # Two points make a line segment ("Strecke").
-        if is_point_on_line_segment( px, py, polygon[i][x], polygon[i][y], polygon[j][x], polygon[j][y] ):
-            intersections += 1
-        elif point_crosses_line_segment( px, py, polygon[i][x], polygon[i][y], polygon[j][x], polygon[j][y] ):
+        if point_crosses_line_segment( px, py, polygon[i][x], polygon[i][y], polygon[j][x], polygon[j][y] ):
             intersections += 1
     return ( intersections%2 != 0 )
 
@@ -115,6 +113,8 @@ if __name__ == '__main__':
         data = json.load(f)
         for district in data['features']:
             name = district['properties']['STADTTLNAM']
+            if not name:
+                continue
             districts[name] = []
             if district['geometry']['type'] == 'MultiPolygon':
                 for subpoly in district['geometry']['coordinates']:
