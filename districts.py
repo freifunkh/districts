@@ -100,9 +100,10 @@ def sanitize_district(district):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A script to add districts to a Freifunk nodes.json. Needs a GeoJSON file to get the data from.')
     parser.add_argument('--default-district', help="Used if a node isn't in any other district. Defaults to 'Default'.", default='Default')
-    parser.add_argument('-n', '--output-nodes-json', help='Output nodes.json file')
+    parser.add_argument('-n', '--output-nodes-json', help='Output nodes.json file.')
     parser.add_argument('-m', '--output-migrate-folder', help='Output folder for router files.')
     parser.add_argument('-x', '--output-outsiders-json', help='Output outsiders.json file, showing only nodes who are in no given district.')
+    parser.add_argument('-w', '--whitelist-file', help='Use a whitelist for the districts (one name per line). If the district name is not in the list, the default name is used.')
     parser.add_argument('-s', '--sanitize-districts', help='Remove some special characters from district names and convert them to lower case.', action="store_true")
     parser.add_argument('nodesJSON', help='Path to the nodes.json file.')
     parser.add_argument('geoJSON', help='Path to the GeoJSON file containing information about the districts.')
@@ -125,6 +126,10 @@ if __name__ == '__main__':
     nodes_json = None
     with open(args.nodesJSON, 'r') as f:
         nodes_json = json.load(f)
+
+    whitelist = None
+    if args.whitelist_file:
+        whitelist = set(line.strip() for line in open(args.whitelist_file))
 
     outsiders = json.loads('{"type": "FeatureCollection","features": []}')
 
@@ -149,6 +154,9 @@ if __name__ == '__main__':
 
         if args.sanitize_districts:
             district = sanitize_district(district)
+
+        if whitelist and not district in whitelist:
+            district = args.default_district
 
         nodes_json['nodes'][node_id]['nodeinfo']['location']['district'] = district
         if args.output_migrate_folder:
