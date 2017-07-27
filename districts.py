@@ -133,19 +133,19 @@ if __name__ == '__main__':
 
     outsiders = json.loads('{"type": "FeatureCollection","features": []}')
 
-    for node_id in nodes_json['nodes']:
-        if not 'location' in nodes_json['nodes'][node_id]['nodeinfo']:
-            nodes_json['nodes'][node_id]['nodeinfo']['location'] = {}
+    for node in nodes_json['nodes']:
+        if not 'location' in node['nodeinfo']:
+            node['nodeinfo']['location'] = {}
 
         district = args.default_district
         try:
-            lat = nodes_json['nodes'][node_id]['nodeinfo']['location']['latitude']
-            lon = nodes_json['nodes'][node_id]['nodeinfo']['location']['longitude']
+            lat = node['nodeinfo']['location']['latitude']
+            lon = node['nodeinfo']['location']['longitude']
             district = find_district( districts, lon, lat, args.default_district )
 
             if args.output_outsiders_json and district == args.default_district:
                 outsider = json.loads('{"type": "Feature","properties": {},"geometry": {"type": "Point", "coordinates": []}}')
-                outsider['properties']['name'] = node_id
+                outsider['properties']['name'] = node['nodeinfo']['node_id']
                 outsider['geometry']['coordinates'].append(lon)
                 outsider['geometry']['coordinates'].append(lat)
                 outsiders['features'].append(outsider)
@@ -158,9 +158,9 @@ if __name__ == '__main__':
         if whitelist and not district in whitelist:
             district = args.default_district
 
-        nodes_json['nodes'][node_id]['nodeinfo']['location']['district'] = district
+        node['nodeinfo']['location']['district'] = district
         if args.output_migrate_folder:
-            migrate_file = args.output_migrate_folder + '/' + node_id
+            migrate_file = args.output_migrate_folder + '/' + node['nodeinfo']['node_id']
             with open(migrate_file, 'w') as f:
                 f.write(district+'\n')
 
